@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GlobaLingua Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="bg-gray-50 p-6 font-sans">
+  <h1 class="text-3xl font-bold text-center text-blue-700 mb-4">🌍 GlobaLingua Dashboard</h1>
+  <div class="max-w-4xl mx-auto space-y-6">
+
+    <canvas id="sentimentChart" class="bg-white p-4 rounded shadow w-full"></canvas>
+
+    <table class="w-full bg-white rounded shadow overflow-hidden text-left">
+      <thead class="bg-blue-600 text-white">
+        <tr>
+          <th class="p-3">Text</th>
+          <th class="p-3">Language</th>
+          <th class="p-3">Sentiment</th>
+          <th class="p-3">Keywords</th>
+        </tr>
+      </thead>
+      <tbody id="dataTable" class="divide-y divide-gray-200">
+        <!-- Populated by script.js -->
+      </tbody>
+    </table>
+  </div>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

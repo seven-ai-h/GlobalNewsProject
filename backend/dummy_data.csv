@@ -1,0 +1,5 @@
+text,language,sentiment,keywords
+"AI is changing the world",English,Positive,AI,world,change
+"人工智能正在重塑我们的未来。",Chinese,Positive,人工智能,未来
+"AI は世界を変える可能性があります。",Japanese,Neutral,AI,世界,可能性
+"La inteligencia artificial está cambiando el mundo.",Spanish,Positive,inteligencia,artificial,mundo
