@@ -53,9 +53,27 @@ async function translateText() {
     const text = document.getElementById('translationText').value.trim();
     if (!text) return alert('Please enter text to translate');
 
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    const fromLang = document.getElementById('fromLang').value;
+    const toLang = document.getElementById('toLang').value;
 
-    const translation = `[Translated Text] ${text}`;
-    document.getElementById('translationResult').innerText = translation;
-    document.getElementById('translationResult').classList.remove('hidden');
+    try {
+        const response = await fetch('/translate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                text: text,
+                from: fromLang,
+                to: toLang
+            })
+        });
+
+        const data = await response.json();
+        document.getElementById('translationResult').innerText = data.translation;
+        document.getElementById('translationResult').classList.remove('hidden');
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Translation failed. Please try again.');
+    }
 }
