@@ -62,9 +62,91 @@ body {
 .dashboard-card { background: rgba(12, 214, 150, 0.9); border-radius: 16px; padding: 1.5rem; text-align: center; }
 .dashboard-icon { width: 60px; height: 60px; margin: auto; margin-bottom: 1rem; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; }
 
+/* Translation section */
+.select-group {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.select {
+    flex: 1;
+    padding: 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 1.125rem;
+    background: white;
+    cursor: pointer;
+}
+
+.select:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+.swap-btn {
+    padding: 1rem;
+    background: rgba(59, 130, 246, 0.1);
+    border: 2px solid #3b82f6;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 1.25rem;
+    transition: all 0.3s ease;
+}
+
+.swap-btn:hover {
+    background: #3b82f6;
+    transform: rotate(180deg);
+}
+
+.result-card {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: rgba(59, 130, 246, 0.05);
+    border: 2px solid #3b82f6;
+    border-radius: 12px;
+    font-size: 1.125rem;
+    color: #1f2937;
+    line-height: 1.6;
+}
+
+.result-card h3 {
+    margin-bottom: 0.5rem;
+    color: #3b82f6;
+}
+
+.result-card ul {
+    list-style: none;
+    padding-left: 0;
+    margin: 0.5rem 0;
+}
+
+.result-card ul li {
+    padding: 0.25rem 0;
+    color: #4b5563;
+}
+
+.confidence-bar {
+    width: 100%;
+    height: 20px;
+    background: #e5e7eb;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+}
+
+.confidence-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    border-radius: 10px;
+    transition: width 0.5s ease;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .container { padding: 1rem; }
     .header h1 { font-size: 2.5rem; }
     .tabs { flex-direction: column; }
+    .select-group { flex-direction: column; }
 }

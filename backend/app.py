@@ -1,82 +1,134 @@
 from flask import Flask, render_template, jsonify, request
-import torch
-from backend.model import SRC, TRG, Seq2Seq, Encoder, Decoder
-import spacy
+from googletrans import Translator
+from textblob import TextBlob
+from langdetect import detect, detect_langs
+import re
 
 app = Flask(__name__)
+translator = Translator()
 
-# Load your trained model
-def load_model():
-    INPUT_DIM = len(SRC.vocab)
-    OUTPUT_DIM = len(TRG.vocab)
-    ENC_EMB_DIM = 256
-    DEC_EMB_DIM = 256
-    HID_DIM = 512
-    N_LAYERS = 2
-    ENC_DROPOUT = 0.5
-    DEC_DROPOUT = 0.5
-    DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    
-    enc = Encoder(INPUT_DIM, ENC_EMB_DIM, HID_DIM, N_LAYERS, ENC_DROPOUT)
-    dec = Decoder(OUTPUT_DIM, DEC_EMB_DIM, HID_DIM, N_LAYERS, DEC_DROPOUT)
-    model = Seq2Seq(enc, dec, DEVICE).to(DEVICE)
-    
-    model.load_state_dict(torch.load('translation_model.pt', map_location=DEVICE))
-    model.eval()
-    
-    return model
-
-model = load_model()
-
-# Translation function
-def translate_sentence(sentence, src_field, trg_field, model, device, max_len=50):
-    model.eval()
-    
-    if isinstance(sentence, str):
-        nlp = spacy.load('zh_core_web_sm')
-        tokens = [token.text.lower() for token in nlp(sentence)]
-    else:
-        tokens = [token.lower() for token in sentence]
-        
-    tokens = [src_field.init_token] + tokens + [src_field.eos_token]
-    src_indexes = [src_field.vocab.stoi[token] for token in tokens]
-    src_tensor = torch.LongTensor(src_indexes).unsqueeze(1).to(device)
-    
-    with torch.no_grad():
-        hidden, cell = model.encoder(src_tensor)
-        
-    trg_indexes = [trg_field.vocab.stoi[trg_field.init_token]]
-    
-    for i in range(max_len):
-        trg_tensor = torch.LongTensor([trg_indexes[-1]]).to(device)
-        
-        with torch.no_grad():
-            output, hidden, cell = model.decoder(trg_tensor, hidden, cell)
-            
-        pred_token = output.argmax(1).item()
-        trg_indexes.append(pred_token)
-        
-        if pred_token == trg_field.vocab.stoi[trg_field.eos_token]:
-            break
-            
-    trg_tokens = [trg_field.vocab.itos[i] for i in trg_indexes]
-    
-    return trg_tokens[1:]
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 @app.route('/translate', methods=['POST'])
 def translate():
-    data = request.json
-    text = data['text']
-    src_lang = data['from']
-    trg_lang = data['to']
-    
-    # Here you would select the appropriate model based on language pair
-    # For simplicity, we'll use our Chinese-English model
-    
-    translation = translate_sentence(text, SRC, TRG, model, 'cpu')
-    translation = ' '.join(translation[:-1])  # Remove <eos> token
-    
-    return jsonify({'translation': translation})
+    try:
+        data = request.json
+        text = data.get('text', '')
+        src_lang = data.get('from', 'auto')
+        trg_lang = data.get('to', 'en')
+        
+        if not text:
+            return jsonify({'error': 'No text provided'}), 400
+        
+        # Perform translation
+        result = translator.translate(text, src=src_lang, dest=trg_lang)
+        
+        return jsonify({
+            'translation': result.text,
+            'src_lang': result.src,
+            'dest_lang': result.dest
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/detect', methods=['POST'])
+def detect_language():
+    try:
+        data = request.json
+        text = data.get('text', '')
+        
+        if not text:
+            return jsonify({'error': 'No text provided'}), 400
+        
+        # Use langdetect for better confidence scores
+        detected_langs = detect_langs(text)
+        primary_lang = detected_langs[0]
+        
+        # Language name mapping
+        lang_names = {
+            'en': 'English',
+            'zh-cn': 'Chinese (Simplified)',
+            'zh-tw': 'Chinese (Traditional)',
+            'ja': 'Japanese',
+            'es': 'Spanish',
+            'fr': 'French',
+            'de': 'German',
+            'ko': 'Korean',
+            'ar': 'Arabic',
+            'hi': 'Hindi',
+            'pt': 'Portuguese',
+            'ru': 'Russian',
+            'it': 'Italian'
+        }
+        
+        lang_code = primary_lang.lang
+        lang_name = lang_names.get(lang_code, lang_code.upper())
+        
+        return jsonify({
+            'language': lang_code,
+            'language_name': lang_name,
+            'confidence': round(primary_lang.prob, 4),
+            'all_detected': [{'lang': l.lang, 'confidence': round(l.prob, 4)} for l in detected_langs[:3]]
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/sentiment', methods=['POST'])
+def analyze_sentiment():
+    try:
+        data = request.json
+        text = data.get('text', '')
+        
+        if not text:
+            return jsonify({'error': 'No text provided'}), 400
+        
+        # Detect language first
+        try:
+            lang = detect(text)
+        except:
+            lang = 'en'
+        
+        # For non-English text, translate to English for sentiment analysis
+        analysis_text = text
+        if lang not in ['en']:
+            try:
+                translated = translator.translate(text, dest='en')
+                analysis_text = translated.text
+            except:
+                pass  # If translation fails, try analyzing original text
+        
+        # Perform sentiment analysis
+        blob = TextBlob(analysis_text)
+        polarity = blob.sentiment.polarity  # -1 to 1
+        subjectivity = blob.sentiment.subjectivity  # 0 to 1
+        
+        # Determine sentiment label
+        if polarity > 0.1:
+            sentiment = 'Positive'
+            emoji = '😊'
+        elif polarity < -0.1:
+            sentiment = 'Negative'
+            emoji = '😔'
+        else:
+            sentiment = 'Neutral'
+            emoji = '😐'
+        
+        # Calculate confidence (higher subjectivity or stronger polarity = higher confidence)
+        confidence = min(abs(polarity) + (subjectivity * 0.5), 1.0)
+        
+        return jsonify({
+            'sentiment': sentiment,
+            'emoji': emoji,
+            'polarity': round(polarity, 3),
+            'subjectivity': round(subjectivity, 3),
+            'confidence': round(confidence, 3),
+            'language': lang,
+            'analysis_text': analysis_text if lang != 'en' else None
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=5000)
