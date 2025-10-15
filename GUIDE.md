@@ -13,3 +13,4 @@ cd backend
 python3 app.py
 
 # Open: http://localhost:5000
+For more information, check out the GlobalNews_Guide.ipynb! 
